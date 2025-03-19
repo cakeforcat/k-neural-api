@@ -135,7 +135,7 @@ def _depth(v, divisor=8, min_value=None):
 
 
 def _se_block(inputs, filters, se_ratio, prefix):
-    x = layers.GlobalAveragePooling2D(name=prefix + 'squeeze_excite/AvgPool')(inputs)
+    x = layers.GlobalAveragePooling2D(name=prefix + 'squeeze_excite-AvgPool')(inputs)
     if backend.image_data_format() == 'channels_first':
         x = layers.Reshape((filters, 1, 1))(x)
     else:
@@ -143,12 +143,12 @@ def _se_block(inputs, filters, se_ratio, prefix):
     x = layers.Conv2D(_depth(filters * se_ratio),
                       kernel_size=1,
                       padding='same',
-                      name=prefix + 'squeeze_excite/Conv')(x)
-    x = layers.ReLU(name=prefix + 'squeeze_excite/Relu')(x)
+                      name=prefix + 'squeeze_excite-Conv')(x)
+    x = layers.ReLU(name=prefix + 'squeeze_excite-Relu')(x)
     x = layers.Conv2D(filters,
                       kernel_size=1,
                       padding='same',
-                      name=prefix + 'squeeze_excite/Conv_1')(x)
+                      name=prefix + 'squeeze_excite-Conv_1')(x)
     x = layers.Activation(cai.layers.HardSigmoid)(x)
     if backend.backend() == 'theano':
         # For the Theano backend, we have to explicitly make
@@ -156,8 +156,8 @@ def _se_block(inputs, filters, se_ratio, prefix):
         x = layers.Lambda(
             lambda br: backend.pattern_broadcast(br, [True, True, True, False]),
             output_shape=lambda input_shape: input_shape,
-            name=prefix + 'squeeze_excite/broadcast')(x)
-    x = layers.Multiply(name=prefix + 'squeeze_excite/Mul')([inputs, x])
+            name=prefix + 'squeeze_excite-broadcast')(x)
+    x = layers.Multiply(name=prefix + 'squeeze_excite-Mul')([inputs, x])
     return x
 
 
@@ -165,11 +165,11 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
                         se_ratio, activation, block_id):
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
     shortcut = x
-    prefix = 'expanded_conv/'
+    prefix = 'expanded_conv-'
     infilters = backend.int_shape(x)[channel_axis]
     if block_id:
         # Expand
-        prefix = 'expanded_conv_{}/'.format(block_id)
+        prefix = 'expanded_conv_{}-'.format(block_id)
         x = layers.Conv2D(_depth(infilters * expansion),
                           kernel_size=1,
                           padding='same',
@@ -178,12 +178,12 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
         x = layers.BatchNormalization(axis=channel_axis,
                                       epsilon=1e-3,
                                       momentum=0.999,
-                                      name=prefix + 'expand/BatchNorm')(x)
+                                      name=prefix + 'expand-BatchNorm')(x)
         x = layers.Activation(activation)(x)
 
     if stride == 2:
         x = layers.ZeroPadding2D(padding=correct_pad(backend, x, kernel_size),
-                                 name=prefix + 'depthwise/pad')(x)
+                                 name=prefix + 'depthwise-pad')(x)
     x = layers.DepthwiseConv2D(kernel_size,
                                strides=stride,
                                padding='same' if stride == 1 else 'valid',
@@ -192,7 +192,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name=prefix + 'depthwise/BatchNorm')(x)
+                                  name=prefix + 'depthwise-BatchNorm')(x)
     x = layers.Activation(activation)(x)
 
     if se_ratio:
@@ -206,7 +206,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name=prefix + 'project/BatchNorm')(x)
+                                  name=prefix + 'project-BatchNorm')(x)
 
     if stride == 1 and infilters == filters:
         x = layers.Add(name=prefix + 'Add')([shortcut, x])
@@ -314,7 +314,7 @@ def MobileNetV3(stack_fn,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name='Conv/BatchNorm')(x)
+                                  name='Conv-BatchNorm')(x)
     x = layers.Activation(activation)(x)
 
     x = stack_fn(x, kernel, activation, se_ratio)
@@ -334,7 +334,7 @@ def MobileNetV3(stack_fn,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name='Conv_1/BatchNorm')(x)
+                                  name='Conv_1-BatchNorm')(x)
     x = layers.Activation(activation)(x)
 
     if include_top:
@@ -355,7 +355,7 @@ def MobileNetV3(stack_fn,
                           padding='same',
                           name='Logits')(x)
         x = layers.Flatten()(x)
-        x = layers.Softmax(name='Predictions/Softmax')(x)
+        x = layers.Softmax(name='Predictions-Softmax')(x)
     else:
         if pooling == 'avg':
             x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
@@ -457,7 +457,7 @@ def MobileNetV3Large(input_shape=None,
                        **kwargs)
 
 def kse_block(inputs, filters, se_ratio, prefix, kType=0):
-    x = layers.GlobalAveragePooling2D(name=prefix + 'squeeze_excite/AvgPool')(inputs)
+    x = layers.GlobalAveragePooling2D(name=prefix + 'squeeze_excite-AvgPool')(inputs)
     if backend.image_data_format() == 'channels_first':
         x = layers.Reshape((filters, 1, 1))(x)
         channel_axis = 1
@@ -469,25 +469,25 @@ def kse_block(inputs, filters, se_ratio, prefix, kType=0):
     #                  padding='same',
     #                  name=prefix + 'squeeze_excite/Conv')(x)
     # x = layers.ReLU(name=prefix + 'squeeze_excite/Relu')(x)
-    x = cai.layers.kPointwiseConv2D(x, filters=_depth(filters * se_ratio), channel_axis=channel_axis, name=prefix + 'squeeze_excite/Conv', activation='relu', has_batch_norm=False, use_bias=True, kType=kType)
+    x = cai.layers.kPointwiseConv2D(x, filters=_depth(filters * se_ratio), channel_axis=channel_axis, name=prefix + 'squeeze_excite-Conv', activation='relu', has_batch_norm=False, use_bias=True, kType=kType)
     # x = layers.Conv2D(filters,
     #                  kernel_size=1,
     #                  padding='same',
     #                  name=prefix + 'squeeze_excite/Conv_1')(x)
     #x = layers.Activation(hard_sigmoid)(x)
-    x = cai.layers.kPointwiseConv2D(x, filters=filters, channel_axis=channel_axis, name=prefix + 'squeeze_excite/Conv_1', activation=cai.layers.HardSigmoid, has_batch_norm=False, use_bias=True, kType=kType)
-    x = layers.Multiply(name=prefix + 'squeeze_excite/Mul')([inputs, x])
+    x = cai.layers.kPointwiseConv2D(x, filters=filters, channel_axis=channel_axis, name=prefix + 'squeeze_excite-Conv_1', activation=cai.layers.HardSigmoid, has_batch_norm=False, use_bias=True, kType=kType)
+    x = layers.Multiply(name=prefix + 'squeeze_excite-Mul')([inputs, x])
     return x
 
 def kinverted_res_block(x, expansion, filters, kernel_size, stride,
                         se_ratio, activation, block_id,  kType=0):
     channel_axis = cai.layers.GetChannelAxis()
     shortcut = x
-    prefix = 'expanded_conv/'
+    prefix = 'expanded_conv-'
     infilters = backend.int_shape(x)[channel_axis]
     if block_id:
         # Expand
-        prefix = 'expanded_conv_{}/'.format(block_id)
+        prefix = 'expanded_conv_{}-'.format(block_id)
         # x = layers.Conv2D(_depth(infilters * expansion),
         #                   kernel_size=1,
         #                  padding='same',
@@ -502,7 +502,7 @@ def kinverted_res_block(x, expansion, filters, kernel_size, stride,
 
     if stride == 2:
         x = layers.ZeroPadding2D(padding=correct_pad(backend, x, kernel_size),
-                                 name=prefix + 'depthwise/pad')(x)
+                                 name=prefix + 'depthwise-pad')(x)
     x = layers.DepthwiseConv2D(kernel_size,
                                strides=stride,
                                padding='same' if stride == 1 else 'valid',
@@ -511,7 +511,7 @@ def kinverted_res_block(x, expansion, filters, kernel_size, stride,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name=prefix + 'depthwise/BatchNorm')(x)
+                                  name=prefix + 'depthwise-BatchNorm')(x)
     x = layers.Activation(activation)(x)
 
     if se_ratio:
@@ -633,7 +633,7 @@ def kMobileNetV3(stack_fn,
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
-                                  name='Conv/BatchNorm')(x)
+                                  name='Conv-BatchNorm')(x)
     x = layers.Activation(activation)(x)
 
     x = stack_fn(x, kernel, activation, se_ratio, kType=kType)
@@ -677,7 +677,7 @@ def kMobileNetV3(stack_fn,
                           padding='same',
                           name='Logits')(x)
         x = layers.Flatten()(x)
-        x = layers.Softmax(name='Predictions/Softmax')(x)
+        x = layers.Softmax(name='Predictions-Softmax')(x)
     else:
         if pooling == 'avg':
             x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
