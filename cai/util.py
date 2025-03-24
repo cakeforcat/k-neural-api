@@ -1,7 +1,7 @@
 import numpy as np
 import os
-import tensorflow
-from tensorflow.keras import backend
+#import tensorflow
+#from keras import backend
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from skimage import color as skimage_color
 import csv
@@ -273,51 +273,51 @@ def create_folder_if_required(save_dir):
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
 
-def get_model_parameter_counts(model):
-    """Calculates the number of parameters from a given model.
-    # Arguments
-        model: model to have parameters counted.
-    # Returns
-      trainable_count: integer number with trainable parameter count.
-      non_trainable_count:  integer number with non trainable parameter count.
-    """
-    trainable_count = int(np.sum([backend.count_params(p) for p in set(model.trainable_weights)]))
-    non_trainable_count = int(np.sum([backend.count_params(p) for p in set(model.non_trainable_weights)]))
-    return trainable_count, non_trainable_count 
+# def get_model_parameter_counts(model):
+    # """Calculates the number of parameters from a given model.
+    # # Arguments
+        # model: model to have parameters counted.
+    # # Returns
+      # trainable_count: integer number with trainable parameter count.
+      # non_trainable_count:  integer number with non trainable parameter count.
+    # """
+    # trainable_count = int(np.sum([backend.count_params(p) for p in set(model.trainable_weights)]))
+    # non_trainable_count = int(np.sum([backend.count_params(p) for p in set(model.non_trainable_weights)]))
+    # return trainable_count, non_trainable_count 
 
-def preprocess(img,  bipolar=True, tfcons=False):
-    """If Bipolar, transforms an image from [0,255] interval into bipolar [-2,+2] interval.
-    """
-    if (bipolar):
-        # JP prefers bipolar input [-2,+2]
-        img /= 64
-        img -= 2
-    else:
-        img /= 255
-    if (tfcons): img = tensorflow.constant(np.array(img))
+# def preprocess(img,  bipolar=True, tfcons=False):
+    # """If Bipolar, transforms an image from [0,255] interval into bipolar [-2,+2] interval.
+    # """
+    # if (bipolar):
+        # # JP prefers bipolar input [-2,+2]
+        # img /= 64
+        # img -= 2
+    # else:
+        # img /= 255
+    # if (tfcons): img = tensorflow.constant(np.array(img))
 
-def preprocess_cp(img,  bipolar=True, tfcons=False):
-    """Same as preprocess but returning a copy of the value."""
-    img_result = np.copy(img)
-    preprocess(img_result,  bipolar=bipolar,  tfcons=tfcons)
-    return img_result
+# def preprocess_cp(img,  bipolar=True, tfcons=False):
+    # """Same as preprocess but returning a copy of the value."""
+    # img_result = np.copy(img)
+    # preprocess(img_result,  bipolar=bipolar,  tfcons=tfcons)
+    # return img_result
 
-def deprocess(img,  bipolar=True, tfcast=False):
-    """Opposite process from preprocess.
-    """
-    if (bipolar):
-        img += 2
-        img *= 64
-    else:
-        img *= 255
-    if (tfcast): img = tensorflow.cast(img, tensorflow.uint8)
+# def deprocess(img,  bipolar=True, tfcast=False):
+    # """Opposite process from preprocess.
+    # """
+    # if (bipolar):
+        # img += 2
+        # img *= 64
+    # else:
+        # img *= 255
+    # if (tfcast): img = tensorflow.cast(img, tensorflow.uint8)
     
-def deprocess_cp(img,  bipolar=True, tfcast=False):
-    """Opposite process from preprocess_cp.
-    """
-    img_result = np.copy(img)
-    deprocess_cp(img_result,  bipolar=bipolar,  tfcast=tfcast)
-    return img_result
+# def deprocess_cp(img,  bipolar=True, tfcast=False):
+    # """Opposite process from preprocess_cp.
+    # """
+    # img_result = np.copy(img)
+    # deprocess_cp(img_result,  bipolar=bipolar,  tfcast=tfcast)
+    # return img_result
 
 def rgb2monopolar(img):
     """Transforms the input image into a monopolar (0, +1) image. """
